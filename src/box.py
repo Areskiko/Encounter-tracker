@@ -2,6 +2,7 @@ import tkinter as tk
 import tools
 main = tk.Tk()
 creatures = {}
+crList = []
 
 
 #Display
@@ -55,8 +56,9 @@ def newCreature():
     crList.sort(key=getInit, reverse=True)
     for child in display.winfo_children():
         child.destroy()
-    for creature in crList:
-        tk.Label(display, text=creature.name).pack()
+    for i in range(len(crList)):
+        tk.Label(display, text=crList[i].name).grid(column=1, row=i)
+        tk.Button(display, text="Delete", bg="black", fg="white", command= lambda: tools.removeCreature(crList[i].name, creatures)).grid(column=0, row=i)
 
 
 addBtn = tk.Button(additions, text="Add Creature", command=newCreature)
@@ -69,7 +71,15 @@ addBtn.grid(row=1, column = 0)
 
 
 
+def start():
+    strtBtn.destroy()
+    print(display.winfo_children())
+    #display.rowconfigure(0, background="red")
+    nxtBtn.pack(side=tk.BOTTOM)
 
+strtBtn = tk.Button(text="Start!", command=start)
+strtBtn.pack(side=tk.BOTTOM)
+nxtBtn = tk.Button(text="Next")
 
 additions.pack(side=tk.TOP)
 display.pack()

@@ -9,3 +9,7 @@ def addCreature(name, speed, maxHp, initiative, creatureList, hp=None):
     creature.rollInitiative(initiative)
     creatureList[name]=(creature)
     return creatureList
+
+def removeCreature(name, creatureList):
+    del creatureList[name]
+    return creatureList
