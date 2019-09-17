@@ -18,18 +18,22 @@ class creature():
         self.isActive = False
         self.AC = AC
     def takeDamage(self, amount):
-        self.hp -= amount
+        lowAmount = amount - self.tempHp
+        self.tempHp -= amount
+        self.hp -= lowAmount
         if self.hp <= self.maxHp:
             self.alive = False
         elif self.hp < 0:
             self.hp = 0
             self.conditions.append("downed")
     def heal(self, amount):
-        lowAmount = amount - self.tempHp
-        self.tempHp -= amount
-        self.hp -= lowAmount
+        self.hp += amount
         if self.hp > self.maxHp:
             self.hp = self.maxHp
+    def addTempHp(self, amount):
+        self.tempHp += amount
+    def removeTempHp(self):
+        self.tempHp = 0
     def updateStat(self, stat, value):
         self.stats[stat]=value
     def addGear(self, thing):
