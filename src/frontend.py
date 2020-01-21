@@ -3,6 +3,7 @@ from tkinter import ttk
 from backend import *
 import thingDef
 import inspect
+import pickle
 
 root = tk.Tk()
 root.title = "DM Toolbox"
@@ -10,7 +11,7 @@ root.title = "DM Toolbox"
 tab_parent = ttk.Notebook(root)
 
 creature_creator = ttk.Frame(tab_parent)
-creature_viewer = ttk.Frame(tab_parent)
+#creature_viewer = ttk.Frame(tab_parent)
 combat_viewer = ttk.Frame(tab_parent)
 
 ###REATURE CREATOR
@@ -65,10 +66,6 @@ addBtn.grid(row=11, column=0)
 
 
 inputFrame.pack()
-###CREATURE VIEWER
-
-
-
 ###COMBAT VIEWER
 s = ttk.Style()
 s.configure("green.TLabel", background="green", font=('Helvetica', 12))
@@ -93,6 +90,7 @@ class creatureFrame():
             style = "orange.TLabel"
         
         self.hpLabel = ttk.Label(self.frame, text=f"{creature.hp}hp", style=style)
+        self.tmpHpLbel = ttk.Label(self.frame, text=f"{creature.tempHp}")
         
         if self.creature.alive:
             style="txt.TLabel"
@@ -104,13 +102,14 @@ class creatureFrame():
 
         if self.creature.isActive:
             self.act = ttk.Label(self.frame, text="*", style="blue.TLabel")
-            self.act.grid(row=i, column=5)
+            self.act.grid(row=i, column=6)
         
         self.nameLabel.grid(row=i, column=0, sticky=tk.W)
         self.hpLabel.grid(row=i, column=3, sticky=tk.E)
+        self.tmpHpLbel.grid(row=i, column=4, sticky=tk.E)
         self.acLabel.grid(row=i, column=2, sticky=tk.E)
         self.delete = ttk.Button(self.frame, text="x", width="2", command= lambda: deleteChar(self.creature.name))
-        self.delete.grid(row=i, column=4)
+        self.delete.grid(row=i, column=5)
         tk.Label(self.frame, text=" ").grid(row=i, column=1)
         self.frame.pack()
 
@@ -121,17 +120,30 @@ orderList.pack()
 frem.pack()
 creatureFrames = []
 
+def save():
+    with open("chars.p", "wb") as f:
+        pickle.dump([creatureDict, creatureIndex], f)
+def load():
+    with open("chars.p", "rb") as f:
+        dat = pickle.load(f)
+    creatureDict.update(dat[0])
+    creatureIndex.extend(dat[1])
+
 def trn():
     turn()
     update()
 nextButton = ttk.Button(combat_viewer, text="Next!", command=trn)
 nextButton.pack()
+saveButton = ttk.Button(combat_viewer, text="Save", command=save)
+saveButton.pack()
+loadButton = ttk.Button(combat_viewer, text="Load", command=load)
+loadButton.pack()
 
 
 
 class infoFrame():
     def __init__(self, creature):
-        self.frame = frem
+        self.frame = tk.Frame(frem)
         self.creature = creature
         ttk.Label(self.frame, text="Info").grid(row=0, column=2, columnspan=2, sticky=tk.N)
         ttk.Label(self.frame, text=f"Strength:{self.creature.stats['strength']}").grid(sticky=tk.W, row=1, column=0)
@@ -161,8 +173,48 @@ class infoFrame():
         ttk.Label(self.frame, text="Inventory").grid(row=10, column=2, columnspan=2, sticky=tk.N)
         self.invFrame.grid(row=11, column=0, columnspan=6, rowspan=6)
         ttk.Label(self.frame, text="Conditions").grid(row=17, column=2, columnspan=2, sticky=tk.N)
+        self.condFrame.grid(row=18, column=0, columnspan=6, rowspan=6)
         
-        self.frame.pack()
+        self.frame.pack(side=tk.BOTTOM)
+class actionFrame():
+    def __init__(self, creature):
+            self.frame = tk.Frame(frem)
+            self.creature = creature
+            tk.Label(self.frame, text="Action").grid(row=0, column=1)
+            
+            self.action = tk.StringVar(self.frame, "Damage")
+            self.actMenu = tk.OptionMenu(self.frame, self.action, "Damage", "Heal", "Give Temp", "Remove Temp", "Set Initiative", "Give Status", "Remove Status")
+
+            self.targCreature = tk.StringVar(self.frame, "")
+            self.targMenu = tk.OptionMenu(self.frame, self.targCreature, *[x for x in creatureIndex])
+
+            self.amount = tk.StringVar(self.frame, "")
+            self.amountMenu = tk.Entry(self.frame, textvariable=self.amount)
+
+            self.actMenu.grid(row=1, column=0)
+            self.targMenu.grid(row=1, column=1)
+            self.amountMenu.grid(row=1, column=2)
+            
+            def do():
+                if self.action.get() == "Damage":
+                    creatureDict[self.targCreature.get()].takeDamage(eval(self.amount.get()))
+                elif self.action.get() == "Heal":
+                    creatureDict[self.targCreature.get()].heal(eval(self.amount.get()))
+                elif self.action.get() == "Give Temp":
+                    creatureDict[self.targCreature.get()].addTempHp(eval(self.amount.get()))
+                elif self.action.get() == "Remove Temp":
+                    creatureDict[self.targCreature.get()].removeTempHp(eval(self.amount.get()))
+                elif self.action.get() == "Set Initiative":
+                    creatureDict[self.targCreature.get()].setInitiative(eval(self.amount.get()))
+                elif self.action.get() == "Give Status":
+                    creatureDict[self.targCreature.get()].giveCondition(str(self.amount.get()))
+                elif self.action.get() == "Remove Status":
+                    creatureDict[self.targCreature.get()].removeCondition(str(self.amount.get()))
+
+            tk.Button(self.frame, text="Do!", command=do).grid(row=2, column=1)
+            self.frame.pack(side=tk.BOTTOM)
+
+
 
 def setUpViewer():
     for child in orderList.winfo_children():
@@ -173,6 +225,7 @@ def setUpViewer():
         creatureFrames.append(creatureFrame(creatureDict[creature], i))
         if creatureDict[creature].isActive:
             infoFrame(creatureDict[creature])
+            actionFrame(creatureDict[creature])
 
 def update():
     sortIndex()
@@ -186,7 +239,7 @@ def update():
 
 tab_parent.add(combat_viewer, text="Combat")
 tab_parent.add(creature_creator, text="Create Creature")
-tab_parent.add(creature_viewer, text="View Creature")
+#tab_parent.add(creature_viewer, text="View Creature")
 tab_parent.pack()
 update()
 root.mainloop()

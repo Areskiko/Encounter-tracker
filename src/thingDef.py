@@ -20,14 +20,17 @@ class creature():
     def takeDamage(self, amount):
         lowAmount = amount - self.tempHp
         self.tempHp -= amount
+        if self.tempHp < 0:
+            self.tempHp = 0
         self.hp -= lowAmount
-        if self.hp <= self.maxHp:
+        if self.hp <= -self.maxHp:
             self.alive = False
         elif self.hp < 0:
             self.hp = 0
             self.conditions.append("downed")
     def heal(self, amount):
         self.hp += amount
+        self.alive = True
         if self.hp > self.maxHp:
             self.hp = self.maxHp
     def addTempHp(self, amount):
