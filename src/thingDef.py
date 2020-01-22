@@ -1,6 +1,6 @@
 #Creatures
 class creature():
-    def __init__(self, name, maxHp: int, hp: int = None, tempHp: int = 0, speed: int = 30, initiative: int = 10, AC: int = 10, stats: dict = {"strength":10, "dexterity":10, "constitutio":10, "intelligence":10, "wisdom":10, "charisma":10}, inventory: list = [], gear: list = [], conditions: list = []):
+    def __init__(self, name, maxHp: int = 0, hp: int = 0, tempHp: int = 0, speed: int = 30, initiative: int = 10, AC: int = 10, stats: dict = {"strength":10, "dexterity":10, "constitutio":10, "intelligence":10, "wisdom":10, "charisma":10}, inventory: list = [], gear: list = [], conditions: list = []):
         """Base class for all living things"""
         self.name = name
         if hp == None:
