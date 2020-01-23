@@ -1,3 +1,6 @@
+# pylint: disable=unused-import
+# pylint: disable=unused-argument
+
 #region Imports
 #region Kivy
 from kivy.app import App
@@ -7,6 +10,7 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
 #endregion Kivy
 from backend import *
 import thingDef
@@ -43,10 +47,10 @@ class CreatorScreen(Screen):
             else:
                 self.inputLayout.add_widget(argScreen(arg))
 
-        addBtn = Button(text="Add", size_hint=(0.15, 1))
+        addBtn = Button(text="Add")
         addBtn.bind(on_press=lambda x: self.callback(x))
 
-        swapButton = Button(text="Combat", size_hint=(0.1, 1))
+        swapButton = Button(text="Combat", size_hint=(1, 0.8))
         swapButton.bind(on_press=lambda x: self.swap(x))
 
         self.inputLayout.add_widget(addBtn)
@@ -98,11 +102,11 @@ class CombatScreen(Screen):
 
 
 
-        updateButton = Button(text="Turn", size_hint=(0.15, 1))
+        updateButton = Button(text="Turn", size_hint=(1,0.2))
         updateButton.bind(on_press=lambda x: trn())
         self.layout.add_widget(updateButton)
 
-        swapButton = Button(text="Create", size_hint=(0.1, 1))
+        swapButton = Button(text="Create", size_hint=(1,0.2))
         swapButton.bind(on_press=lambda x: self.swap(x))
 
         self.layout.add_widget(swapButton)
@@ -122,7 +126,11 @@ class CreatureField(BoxLayout):
         nColor = [1, 1, 1, 1]
         if creature.isActive:
             nColor = [0.8, 0.67, 0, 1]
-        self.add_widget(Label(text=creature.name, color=nColor))
+        if self.creature.alive:
+            name = self.creature.name
+        else:
+            name = f"[s]{self.creature.name}[/s]"
+        self.add_widget(Label(text=name, color=nColor))
         rate = self.creature.hp/self.creature.maxHp
         if rate < 0.3:
             hColor = [1, 0, 0, 1]
@@ -146,7 +154,7 @@ class ActionField(BoxLayout):
         """Initializes the Layout"""
         super(ActionField, self).__init__(**kwargs)
         self.orientation="horizontal"
-
+        self.size_hint = (1, 0.3)
         self.action = Spinner(
             text="Action",
             values=("Damage", "Heal", "Give Temp Hp", "Remove Temp Hp", "Set Initiative")
@@ -181,11 +189,25 @@ class ActionField(BoxLayout):
             creature.setInitiative(eval(self.amount.text))
         update()
 
-class InfoField(BoxLayout):
-    def __init__(self, **kwargs):
+class InfoField(GridLayout):
+    def __init__(self, creature, **kwargs):
         """Initializes the Layout"""
         super(InfoField, self).__init__(**kwargs)
-        
+        self.creature = creature
+        self.cols=3
+        self.rows=3
+
+        #Stats
+        self.add_widget(Label(text=f"Strength:{creature.stats['strength']}"))
+        self.add_widget(Label(text=f"Dexterity:{creature.stats['dexterity']}"))
+        self.add_widget(Label(text=f"Constitution:{creature.stats['constitution']}"))
+        self.add_widget(Label(text=f"Intelligence:{creature.stats['intelligence']}"))
+        self.add_widget(Label(text=f"Wisdom:{creature.stats['wisdom']}"))
+        self.add_widget(Label(text=f"Charisma:{creature.stats['charisma']}"))
+
+        #Misc
+        self.add_widget(Label(text=f"AC:{creature.AC}"))
+        self.add_widget(Label(text=f"Speed:{creature.speed}"))
 
 
 def createCreature(*args):
@@ -210,6 +232,11 @@ def update():
     combat.creatureArea.clear_widgets()
     for creature in creatureIndex:
         combat.creatureArea.add_widget(CreatureField(creatureDict[creature]))
+    combat.statArea.clear_widgets()
+    for creature, i in zip(creatureIndex, range(len(creatureIndex))):
+        if creatureDict[creature].isActive:
+            combat.statArea.add_widget(InfoField(creatureDict[creature]))
+
     combat.actionArea.target.values=[creature for creature in creatureIndex]
 
 sm = ScreenManager()
