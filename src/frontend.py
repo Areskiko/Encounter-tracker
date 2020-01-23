@@ -98,13 +98,19 @@ class CombatScreen(Screen):
         self.statArea = BoxLayout(orientation="vertical")
         self.layout.add_widget(self.statArea)
 
-
-
-
-
         updateButton = Button(text="Turn", size_hint=(1,0.2))
         updateButton.bind(on_press=lambda x: trn())
         self.layout.add_widget(updateButton)
+
+        self.saveLoad = BoxLayout(orientation="horizontal", size_hint=(1, 0.2))
+        self.save = Button(text="Save")
+        self.save.bind(on_press=lambda x: save())
+        self.saveLoad.add_widget(self.save)
+
+        self.load = Button(text="Load")
+        self.load.bind(on_press=lambda x: load())
+        self.saveLoad.add_widget(self.load)
+        self.layout.add_widget(self.saveLoad)
 
         swapButton = Button(text="Create", size_hint=(1,0.2))
         swapButton.bind(on_press=lambda x: self.swap(x))
@@ -141,7 +147,7 @@ class CreatureField(BoxLayout):
         self.add_widget(Label(text=f"hp:{self.creature.hp}/{self.creature.maxHp}", color=hColor))
         self.add_widget(Label(text=f"tmp:{self.creature.tempHp}"))
         self.add_widget(Label(text=f"Ac:{self.creature.AC}"))
-        delButton = Button(text="[X]")
+        delButton = Button(text="[X]", background_color = [0, 0, 0, 0])
         delButton.bind(on_press=lambda x: self.delete(x))
         self.add_widget(delButton)
     
@@ -212,7 +218,6 @@ class InfoField(GridLayout):
 
 def createCreature(*args):
     addCreature(thingDef.creature(*args))
-    print(creatureIndex)
     update()
 
 def save():
@@ -221,8 +226,14 @@ def save():
 def load():
     with open("chars.p", "rb") as f:
         dat = pickle.load(f)
-    creatureDict.update(dat[0])
-    creatureIndex.extend(dat[1])
+    for d0 in dat[0]:
+        if d0 in creatureIndex:
+            pass
+        else:
+            temp = {d0:dat[0][d0]}
+            creatureDict.update(temp)
+            creatureIndex.append(d0)
+    update()
 def trn():
     turn()
     update()
