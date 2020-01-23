@@ -1,124 +1,224 @@
-import tkinter as tk
-from tkinter import ttk
+# pylint: disable=unused-import
+# pylint: disable=unused-argument
+
+#region Imports
+#region Kivy
+from kivy.app import App
+from kivy.uix.button import Button
+from kivy.uix.spinner import Spinner
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+#endregion Kivy
 from backend import *
 import thingDef
 import inspect
 import pickle
+#endregion Imports
 
-root = tk.Tk()
-root.title = "DM Toolbox"
+rootLayout = BoxLayout(orientation="vertical")
 
-tab_parent = ttk.Notebook(root)
+class argScreen(Screen):
+    def __init__(self, argument, **kwargs):
+        """Initializes the screen"""
+        super(argScreen, self).__init__(**kwargs)
+        layout = BoxLayout(orientation="horizontal")
+        self.inputName = Label(text=argument)
+        layout.add_widget(self.inputName)
+        self.inputField = TextInput(multiline=False)
+        layout.add_widget(self.inputField)
+        self.add_widget(layout)
 
-creature_creator = ttk.Frame(tab_parent)
-#creature_viewer = ttk.Frame(tab_parent)
-combat_viewer = ttk.Frame(tab_parent)
 
-###REATURE CREATOR
-class inputField():
-    def __init__(self, arg, nr):
-        self.frame = inputFrame
-        self.attrLabel = ttk.Label(self.frame, text=str(arg).lower().capitalize())
-        self.attrLabel.grid(row=nr, column=0)
+class CreatorScreen(Screen):
+    def __init__(self, **kwargs):
+        """Initializes the screen"""
+        super(CreatorScreen, self).__init__(**kwargs)
+        self.layout = BoxLayout(orientation="vertical")
 
-        self.attrInput = ttk.Entry(self.frame)
-        self.attrInput.delete(0, tk.END)
-        self.attrInput.grid(row=nr, column=1)
-
-inputFrame = ttk.Frame(creature_creator)
-inputList = []
-#Generate Input Fields
-for arg, nr in zip(inspect.getfullargspec(thingDef.creature.__init__)[0], range(len(inspect.getfullargspec(thingDef.creature.__init__)[0])-1)):
-    if str(arg)=="self":
-        pass
-    else:
-        inputList.append(inputField(arg, nr))
-
-def createCreature():
-    ints = ["Maxhp", "Hp", "Temphp", "Speed", "Initiative", "Ac"]
-    strings = ["Name"]
-    lists = ["Inventory", "Gear", "Conditions"]
-    dicts = ["Stats"]
-    try:
-        args = []
-        for argField in inputList:
-            arg = argField.attrInput.get()
-            if argField.attrLabel.cget("text") in ints:
-                args.append(int(arg))
-            elif argField.attrLabel.cget("text") in strings:
-                args.append(str(arg))
-            elif argField.attrLabel.cget("text") in lists:
-                args.append(arg.split(", "))
-            elif argField.attrLabel.cget("text") in dicts:
-                statsList = arg.split(", ")
-                args.append({"strength":statsList[0], "dexterity":statsList[1], "constitution":statsList[2], "intelligence":statsList[3], "wisdom":statsList[4], "charisma":statsList[5]})
+        #Generate Input Fields
+        self.inputLayout = BoxLayout(orientation="vertical")
+        inputList = []
+        for arg, nr in zip(inspect.getfullargspec(thingDef.creature.__init__)[0], range(len(inspect.getfullargspec(thingDef.creature.__init__)[0])-1)):
+            if str(arg)=="self":
+                pass
             else:
-                print("Error")
-        addCreature(thingDef.creature(*args))
-    except Exception as e:
-        print(e)
-    print(creatureIndex)
-    update()
+                self.inputLayout.add_widget(argScreen(arg))
 
-addBtn = ttk.Button(inputFrame, text="Add!", command=createCreature)
-addBtn.grid(row=11, column=0)
+        addBtn = Button(text="Add")
+        addBtn.bind(on_press=lambda x: self.callback(x))
+
+        swapButton = Button(text="Combat", size_hint=(1, 0.8))
+        swapButton.bind(on_press=lambda x: self.swap(x))
+
+        self.inputLayout.add_widget(addBtn)
+        self.inputLayout.add_widget(swapButton)
+        self.layout.add_widget(self.inputLayout)
+        self.add_widget(self.layout)
 
 
+    def callback(self, instance):
+        ints = ["maxHp", "hp", "tempHp", "speed", "initiative", "AC"]
+        strings = ["name"]
+        lists = ["Inventory", "gear", "conditions"]
+        dicts = ["stats"]
+        args = []
+        for argField in self.inputLayout.children:
+            if type(argField) == type(Button()):
+                pass
+            else:
+                arg = argField.inputField.text
+                _type = argField.inputName.text
+                if _type in ints:
+                    args.append(int(arg))
+                if _type in strings:
+                    args.append(str(arg))
+                if _type in lists:
+                    args.append(arg.split(", "))
+                if _type in dicts:
+                    statsList = arg.split(", ")
+                    args.append({"strength":statsList[0], "dexterity":statsList[1], "constitution":statsList[2], "intelligence":statsList[3], "wisdom":statsList[4], "charisma":statsList[5]})
+        args.reverse()
+        createCreature(*args)
+    def swap(self, instance):
+        sm.transition.direction = "left"
+        sm.current = "combat"
 
-inputFrame.pack()
-###COMBAT VIEWER
-s = ttk.Style()
-s.configure("green.TLabel", background="green", font=('Helvetica', 12))
-s.configure("orange.TLabel", background="orange", font=('Helvetica', 12))
-s.configure("red.TLabel", background="red", font=('Helvetica', 12))
-s.configure("blue.TLabel", foreground="blue", font=('Helvetica', 16))
-s.configure("txt.TLabel", font=("Helvetica", 12))
-s.configure("dead.TLabel", font=("Helvetica", 12, "overstrike"))
-class creatureFrame():
-    def __init__(self, creature, i):
+class CombatScreen(Screen):
+    def __init__(self, **kwargs):
+        """Initializes the screen"""
+        super(CombatScreen, self).__init__(**kwargs)
+        self.layout = BoxLayout(orientation="vertical")
+        self.creatureArea = BoxLayout(orientation="vertical")
+        self.layout.add_widget(self.creatureArea)
+        self.actionArea = ActionField()
+        self.layout.add_widget(self.actionArea)
+        self.statArea = BoxLayout(orientation="vertical")
+        self.layout.add_widget(self.statArea)
+
+        updateButton = Button(text="Turn", size_hint=(1,0.2))
+        updateButton.bind(on_press=lambda x: trn())
+        self.layout.add_widget(updateButton)
+
+        self.saveLoad = BoxLayout(orientation="horizontal", size_hint=(1, 0.2))
+        self.save = Button(text="Save")
+        self.save.bind(on_press=lambda x: save())
+        self.saveLoad.add_widget(self.save)
+
+        self.load = Button(text="Load")
+        self.load.bind(on_press=lambda x: load())
+        self.saveLoad.add_widget(self.load)
+        self.layout.add_widget(self.saveLoad)
+
+        swapButton = Button(text="Create", size_hint=(1,0.2))
+        swapButton.bind(on_press=lambda x: self.swap(x))
+
+        self.layout.add_widget(swapButton)
+        self.add_widget(self.layout)
+
+
+    def swap(self, instance):
+        sm.transition.direction = "right"
+        sm.current = "create"   
+       
+class CreatureField(BoxLayout):
+    def __init__(self, creature, **kwargs):
+        """Initializes the Layout"""
+        super(CreatureField, self).__init__(**kwargs)
         self.creature = creature
-        self.frame = orderList#ttk.Frame(orderList)
-
-        if self.creature.hp > self.creature.maxHp * 2/3:
-            style = "green.TLabel"
-            
-
-        elif self.creature.hp < self.creature.maxHp * 1/3:
-            style = "red.TLabel"
-
-        else:
-            style = "orange.TLabel"
-        
-        self.hpLabel = ttk.Label(self.frame, text=f"{creature.hp}hp", style=style)
-        self.tmpHpLbel = ttk.Label(self.frame, text=f"{creature.tempHp}")
-        
+        self.orientation="horizontal"
+        nColor = [1, 1, 1, 1]
+        if creature.isActive:
+            nColor = [0.8, 0.67, 0, 1]
         if self.creature.alive:
-            style="txt.TLabel"
+            name = self.creature.name
         else:
-            style="dead.TLabel"
+            name = f"[s]{self.creature.name}[/s]"
+        self.add_widget(Label(text=name, color=nColor))
+        rate = self.creature.hp/self.creature.maxHp
+        if rate < 0.3:
+            hColor = [1, 0, 0, 1]
+        elif rate < 0.6:
+            hColor = [1, 1, 0, 1]
+        else:
+            hColor = [0, 1, 0, 1]
+        self.add_widget(Label(text=f"hp:{self.creature.hp}/{self.creature.maxHp}", color=hColor))
+        self.add_widget(Label(text=f"tmp:{self.creature.tempHp}"))
+        self.add_widget(Label(text=f"Ac:{self.creature.AC}"))
+        delButton = Button(text="[X]", background_color = [0, 0, 0, 0])
+        delButton.bind(on_press=lambda x: self.delete(x))
+        self.add_widget(delButton)
+    
+    def delete(self, instance):
+        deleteChar(self.creature.name)
+        update()
 
-        self.nameLabel = ttk.Label(self.frame, text=str(creature.name), style=style)
-        self.acLabel = ttk.Label(self.frame, text=f"AC:{self.creature.AC}", style="txt.TLabel")
+class ActionField(BoxLayout):
+    def __init__(self, **kwargs):
+        """Initializes the Layout"""
+        super(ActionField, self).__init__(**kwargs)
+        self.orientation="horizontal"
+        self.size_hint = (1, 0.3)
+        self.action = Spinner(
+            text="Action",
+            values=("Damage", "Heal", "Give Temp Hp", "Remove Temp Hp", "Set Initiative")
+        )
+        self.add_widget(self.action)
 
-        if self.creature.isActive:
-            self.act = ttk.Label(self.frame, text="*", style="blue.TLabel")
-            self.act.grid(row=i, column=6)
-        
-        self.nameLabel.grid(row=i, column=0, sticky=tk.W)
-        self.hpLabel.grid(row=i, column=3, sticky=tk.E)
-        self.tmpHpLbel.grid(row=i, column=4, sticky=tk.E)
-        self.acLabel.grid(row=i, column=2, sticky=tk.E)
-        self.delete = ttk.Button(self.frame, text="x", width="2", command= lambda: deleteChar(self.creature.name))
-        self.delete.grid(row=i, column=5)
-        tk.Label(self.frame, text=" ").grid(row=i, column=1)
-        self.frame.pack()
+        self.target = Spinner(
+            text="Target",
+            values=[creature for creature in creatureIndex]
+        )
+        self.add_widget(self.target)
+
+        self.amount = TextInput()
+        self.add_widget(self.amount)
+
+        self.do = Button(text="Do!")
+        self.do.bind(on_press=self.doIt)
+        self.add_widget(self.do)
+
+    def doIt(self, instance):
+        action = self.action.text
+        creature = creatureDict[self.target.text]
+        if action == "Damage":
+            creature.takeDamage(eval(self.amount.text))
+        elif action == "Heal":
+            creature.heal(eval(self.amount.text))
+        elif action == "Give Temp Hp":
+            creature.addTempHp(eval(self.amount.text))
+        elif action == "Remove Temp Hp":
+            creature.removeTempHp()
+        elif action == "Set Initiative":
+            creature.setInitiative(eval(self.amount.text))
+        update()
+
+class InfoField(GridLayout):
+    def __init__(self, creature, **kwargs):
+        """Initializes the Layout"""
+        super(InfoField, self).__init__(**kwargs)
+        self.creature = creature
+        self.cols=3
+        self.rows=3
+
+        #Stats
+        self.add_widget(Label(text=f"Strength:{creature.stats['strength']}"))
+        self.add_widget(Label(text=f"Dexterity:{creature.stats['dexterity']}"))
+        self.add_widget(Label(text=f"Constitution:{creature.stats['constitution']}"))
+        self.add_widget(Label(text=f"Intelligence:{creature.stats['intelligence']}"))
+        self.add_widget(Label(text=f"Wisdom:{creature.stats['wisdom']}"))
+        self.add_widget(Label(text=f"Charisma:{creature.stats['charisma']}"))
+
+        #Misc
+        self.add_widget(Label(text=f"AC:{creature.AC}"))
+        self.add_widget(Label(text=f"Speed:{creature.speed}"))
 
 
-orderList = ttk.Frame(combat_viewer)
-frem = ttk.Frame(combat_viewer)
-orderList.pack()
-frem.pack()
-creatureFrames = []
+def createCreature(*args):
+    addCreature(thingDef.creature(*args))
+    update()
 
 def save():
     with open("chars.p", "wb") as f:
@@ -126,120 +226,39 @@ def save():
 def load():
     with open("chars.p", "rb") as f:
         dat = pickle.load(f)
-    creatureDict.update(dat[0])
-    creatureIndex.extend(dat[1])
-
+    for d0 in dat[0]:
+        if d0 in creatureIndex:
+            pass
+        else:
+            temp = {d0:dat[0][d0]}
+            creatureDict.update(temp)
+            creatureIndex.append(d0)
+    update()
 def trn():
     turn()
     update()
-nextButton = ttk.Button(combat_viewer, text="Next!", command=trn)
-nextButton.pack()
-saveButton = ttk.Button(combat_viewer, text="Save", command=save)
-saveButton.pack()
-loadButton = ttk.Button(combat_viewer, text="Load", command=load)
-loadButton.pack()
-
-
-
-class infoFrame():
-    def __init__(self, creature):
-        self.frame = tk.Frame(frem)
-        self.creature = creature
-        ttk.Label(self.frame, text="Info").grid(row=0, column=2, columnspan=2, sticky=tk.N)
-        ttk.Label(self.frame, text=f"Strength:{self.creature.stats['strength']}").grid(sticky=tk.W, row=1, column=0)
-        ttk.Label(self.frame, text=f"Dexterity:{self.creature.stats['dexterity']}").grid(sticky=tk.W, row=1, column=1)
-        ttk.Label(self.frame, text=f"Constitution:{self.creature.stats['constitution']}").grid(sticky=tk.W, row=1, column=2)
-        ttk.Label(self.frame, text=f"Intelligence:{self.creature.stats['intelligence']}").grid(sticky=tk.W, row=1, column=3)
-        ttk.Label(self.frame, text=f"Wisdom:{self.creature.stats['wisdom']}").grid(sticky=tk.W, row=1, column=4)
-        ttk.Label(self.frame, text=f"Charisma:{self.creature.stats['charisma']}").grid(sticky=tk.W, row=1, column=5)
-
-        ttk.Label(self.frame, text=f"Hp:{self.creature.hp}").grid(sticky=tk.W, row=2, column=0)
-        ttk.Label(self.frame, text=f"Max:{self.creature.maxHp}").grid(sticky=tk.W, row=2, column=1)
-        ttk.Label(self.frame, text=f"Temp:{self.creature.tempHp}").grid(sticky=tk.W, row=2, column=2)
-        ttk.Label(self.frame, text=f"Speed:{self.creature.speed}").grid(sticky=tk.W, row=2, column=3)
-
-        self.invFrame = ttk.Frame(self.frame)
-        self.gearFrame = ttk.Frame(self.frame)
-        self.condFrame = ttk.Frame(self.frame)
-        for thing in self.creature.gear:
-            ttk.Label(self.gearFrame, text=str(thing)).pack(side=tk.LEFT)
-        for thing in self.creature.inventory:
-            ttk.Label(self.invFrame, text=str(thing)).pack(side=tk.LEFT)
-        for thing in self.creature.conditions:
-            ttk.Label(self.condFrame, text=str(thing)).pack(side=tk.LEFT)
-
-        ttk.Label(self.frame, text="Gear").grid(row=3, column=2, columnspan=2, sticky=tk.N)
-        self.gearFrame.grid(row=4, column=0, columnspan=6, rowspan=6)
-        ttk.Label(self.frame, text="Inventory").grid(row=10, column=2, columnspan=2, sticky=tk.N)
-        self.invFrame.grid(row=11, column=0, columnspan=6, rowspan=6)
-        ttk.Label(self.frame, text="Conditions").grid(row=17, column=2, columnspan=2, sticky=tk.N)
-        self.condFrame.grid(row=18, column=0, columnspan=6, rowspan=6)
-        
-        self.frame.pack(side=tk.BOTTOM)
-class actionFrame():
-    def __init__(self, creature):
-            self.frame = tk.Frame(frem)
-            self.creature = creature
-            tk.Label(self.frame, text="Action").grid(row=0, column=1)
-            
-            self.action = tk.StringVar(self.frame, "Damage")
-            self.actMenu = tk.OptionMenu(self.frame, self.action, "Damage", "Heal", "Give Temp", "Remove Temp", "Set Initiative", "Give Status", "Remove Status")
-
-            self.targCreature = tk.StringVar(self.frame, "")
-            self.targMenu = tk.OptionMenu(self.frame, self.targCreature, *[x for x in creatureIndex])
-
-            self.amount = tk.StringVar(self.frame, "")
-            self.amountMenu = tk.Entry(self.frame, textvariable=self.amount)
-
-            self.actMenu.grid(row=1, column=0)
-            self.targMenu.grid(row=1, column=1)
-            self.amountMenu.grid(row=1, column=2)
-            
-            def do():
-                if self.action.get() == "Damage":
-                    creatureDict[self.targCreature.get()].takeDamage(eval(self.amount.get()))
-                elif self.action.get() == "Heal":
-                    creatureDict[self.targCreature.get()].heal(eval(self.amount.get()))
-                elif self.action.get() == "Give Temp":
-                    creatureDict[self.targCreature.get()].addTempHp(eval(self.amount.get()))
-                elif self.action.get() == "Remove Temp":
-                    creatureDict[self.targCreature.get()].removeTempHp(eval(self.amount.get()))
-                elif self.action.get() == "Set Initiative":
-                    creatureDict[self.targCreature.get()].setInitiative(eval(self.amount.get()))
-                elif self.action.get() == "Give Status":
-                    creatureDict[self.targCreature.get()].giveCondition(str(self.amount.get()))
-                elif self.action.get() == "Remove Status":
-                    creatureDict[self.targCreature.get()].removeCondition(str(self.amount.get()))
-
-            tk.Button(self.frame, text="Do!", command=do).grid(row=2, column=1)
-            self.frame.pack(side=tk.BOTTOM)
-
-
-
-def setUpViewer():
-    for child in orderList.winfo_children():
-        child.destroy()
-    for child in frem.winfo_children():
-        child.destroy()
-    for creature, i in zip(creatureIndex, range(len(creatureIndex))):
-        creatureFrames.append(creatureFrame(creatureDict[creature], i))
-        if creatureDict[creature].isActive:
-            infoFrame(creatureDict[creature])
-            actionFrame(creatureDict[creature])
 
 def update():
     sortIndex()
-    setUpViewer()
+    combat.creatureArea.clear_widgets()
+    for creature in creatureIndex:
+        combat.creatureArea.add_widget(CreatureField(creatureDict[creature]))
+    combat.statArea.clear_widgets()
+    for creature, i in zip(creatureIndex, range(len(creatureIndex))):
+        if creatureDict[creature].isActive:
+            combat.statArea.add_widget(InfoField(creatureDict[creature]))
 
+    combat.actionArea.target.values=[creature for creature in creatureIndex]
 
+sm = ScreenManager()
+combat = CombatScreen(name="combat")
+create = CreatorScreen(name="create")
+sm.add_widget(create)
+sm.add_widget(combat)
 
+class Main(App):
+    def build(self):
+        return sm
 
-
-
-
-tab_parent.add(combat_viewer, text="Combat")
-tab_parent.add(creature_creator, text="Create Creature")
-#tab_parent.add(creature_viewer, text="View Creature")
-tab_parent.pack()
-update()
-root.mainloop()
+if __name__ == "__main__":
+    Main().run()

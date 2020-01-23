@@ -1,6 +1,9 @@
+# pylint: disable=unused-argument
+
+
 #Creatures
 class creature():
-    def __init__(self, name, maxHp: int, hp: int = None, tempHp: int = 0, speed: int = 30, initiative: int = 10, AC: int = 10, stats: dict = {"strength":10, "dexterity":10, "constitutio":10, "intelligence":10, "wisdom":10, "charisma":10}, inventory: list = [], gear: list = [], conditions: list = []):
+    def __init__(self, name = "None", maxHp: int = 0, hp: int = 0, tempHp: int = 0, speed: int = 30, initiative: int = 10, AC: int = 10, stats: dict = {"strength":10, "dexterity":10, "constitutio":10, "intelligence":10, "wisdom":10, "charisma":10}, inventory: list = [], gear: list = [], conditions: list = []):
         """Base class for all living things"""
         self.name = name
         if hp == None:
@@ -19,6 +22,8 @@ class creature():
         self.AC = AC
     def takeDamage(self, amount):
         lowAmount = amount - self.tempHp
+        if lowAmount < 0:
+            lowAmount = 0
         self.tempHp -= amount
         if self.tempHp < 0:
             self.tempHp = 0
@@ -55,7 +60,10 @@ class creature():
         self.conditions.append(condition)
     def removeCondition(self, condition):
         self.conditions.remove(condition)
-
+    def __str__(self):
+        return f"{self.name}"
+    def __repr__(self):
+        return f"{self.name} Object"
 class player(creature):
     def __init__(self, maxHp: int, hp: int = None, tempHp: int = 0, speed: int = 30, initiative: int = 10, AC: int = 10, stats: dict = {"strength":10, "dexterity":10, "constitutio":10, "intelligence":10, "wisdom":10, "charisma":10}, inventory: list = [], gear: list = [], conditions: list = []):
         super().__init__(maxHp, hp, tempHp, speed, initiative, AC, stats, inventory, gear, conditions)
