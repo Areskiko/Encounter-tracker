@@ -2,7 +2,7 @@
 #region Kivy
 from kivy.app import App
 from kivy.uix.button import Button
-from kivy.uix.dropdown import DropDown
+from kivy.uix.spinner import Spinner
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.screenmanager import ScreenManager, Screen
@@ -43,10 +43,10 @@ class CreatorScreen(Screen):
             else:
                 self.inputLayout.add_widget(argScreen(arg))
 
-        addBtn = Button(text="Add")
+        addBtn = Button(text="Add", size_hint=(0.15, 1))
         addBtn.bind(on_press=lambda x: self.callback(x))
 
-        swapButton = Button(text="Combat")
+        swapButton = Button(text="Combat", size_hint=(0.1, 1))
         swapButton.bind(on_press=lambda x: self.swap(x))
 
         self.inputLayout.add_widget(addBtn)
@@ -89,7 +89,7 @@ class CombatScreen(Screen):
         self.layout = BoxLayout(orientation="vertical")
         self.creatureArea = BoxLayout(orientation="vertical")
         self.layout.add_widget(self.creatureArea)
-        self.actionArea = BoxLayout(orientation="vertical")
+        self.actionArea = ActionField()
         self.layout.add_widget(self.actionArea)
         self.statArea = BoxLayout(orientation="vertical")
         self.layout.add_widget(self.statArea)
@@ -98,11 +98,11 @@ class CombatScreen(Screen):
 
 
 
-        updateButton = Button(text="Turn")
-        updateButton.bind(on_press=lambda x: update())
+        updateButton = Button(text="Turn", size_hint=(0.15, 1))
+        updateButton.bind(on_press=lambda x: trn())
         self.layout.add_widget(updateButton)
 
-        swapButton = Button(text="Create")
+        swapButton = Button(text="Create", size_hint=(0.1, 1))
         swapButton.bind(on_press=lambda x: self.swap(x))
 
         self.layout.add_widget(swapButton)
@@ -112,15 +112,82 @@ class CombatScreen(Screen):
     def swap(self, instance):
         sm.transition.direction = "right"
         sm.current = "create"   
-    
-    
+       
 class CreatureField(BoxLayout):
     def __init__(self, creature, **kwargs):
         """Initializes the Layout"""
         super(CreatureField, self).__init__(**kwargs)
+        self.creature = creature
         self.orientation="horizontal"
-        self.add_widget(Label(text=creature.name))
-        self.add_widget(Label(text=f"hp:{creature.hp}/{creature.maxHp}"))
+        nColor = [1, 1, 1, 1]
+        if creature.isActive:
+            nColor = [0.8, 0.67, 0, 1]
+        self.add_widget(Label(text=creature.name, color=nColor))
+        rate = self.creature.hp/self.creature.maxHp
+        if rate < 0.3:
+            hColor = [1, 0, 0, 1]
+        elif rate < 0.6:
+            hColor = [1, 1, 0, 1]
+        else:
+            hColor = [0, 1, 0, 1]
+        self.add_widget(Label(text=f"hp:{self.creature.hp}/{self.creature.maxHp}", color=hColor))
+        self.add_widget(Label(text=f"tmp:{self.creature.tempHp}"))
+        self.add_widget(Label(text=f"Ac:{self.creature.AC}"))
+        delButton = Button(text="[X]")
+        delButton.bind(on_press=lambda x: self.delete(x))
+        self.add_widget(delButton)
+    
+    def delete(self, instance):
+        deleteChar(self.creature.name)
+        update()
+
+class ActionField(BoxLayout):
+    def __init__(self, **kwargs):
+        """Initializes the Layout"""
+        super(ActionField, self).__init__(**kwargs)
+        self.orientation="horizontal"
+
+        self.action = Spinner(
+            text="Action",
+            values=("Damage", "Heal", "Give Temp Hp", "Remove Temp Hp", "Set Initiative")
+        )
+        self.add_widget(self.action)
+
+        self.target = Spinner(
+            text="Target",
+            values=[creature for creature in creatureIndex]
+        )
+        self.add_widget(self.target)
+
+        self.amount = TextInput()
+        self.add_widget(self.amount)
+
+        self.do = Button(text="Do!")
+        self.do.bind(on_press=self.doIt)
+        self.add_widget(self.do)
+
+    def doIt(self, instance):
+        action = self.action.text
+        creature = creatureDict[self.target.text]
+        if action == "Damage":
+            creature.takeDamage(eval(self.amount.text))
+        elif action == "Heal":
+            creature.heal(eval(self.amount.text))
+        elif action == "Give Temp Hp":
+            creature.addTempHp(eval(self.amount.text))
+        elif action == "Remove Temp Hp":
+            creature.removeTempHp()
+        elif action == "Set Initiative":
+            creature.setInitiative(eval(self.amount.text))
+        update()
+
+class InfoField(BoxLayout):
+    def __init__(self, **kwargs):
+        """Initializes the Layout"""
+        super(InfoField, self).__init__(**kwargs)
+        
+
+
 def createCreature(*args):
     addCreature(thingDef.creature(*args))
     print(creatureIndex)
@@ -143,7 +210,7 @@ def update():
     combat.creatureArea.clear_widgets()
     for creature in creatureIndex:
         combat.creatureArea.add_widget(CreatureField(creatureDict[creature]))
-
+    combat.actionArea.target.values=[creature for creature in creatureIndex]
 
 sm = ScreenManager()
 combat = CombatScreen(name="combat")

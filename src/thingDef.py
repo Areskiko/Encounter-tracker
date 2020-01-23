@@ -19,6 +19,8 @@ class creature():
         self.AC = AC
     def takeDamage(self, amount):
         lowAmount = amount - self.tempHp
+        if lowAmount < 0:
+            lowAmount = 0
         self.tempHp -= amount
         if self.tempHp < 0:
             self.tempHp = 0
