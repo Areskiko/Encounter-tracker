@@ -126,9 +126,14 @@ def save():
 def load():
     with open("chars.p", "rb") as f:
         dat = pickle.load(f)
-    creatureDict.update(dat[0])
-    creatureIndex.extend(dat[1])
-
+    for d0 in dat[0]:
+        if d0 in creatureIndex:
+            pass
+        else:
+            temp = {d0:dat[0][d0]}
+            creatureDict.update(temp)
+            creatureIndex.append(d0)
+    update()
 def trn():
     turn()
     update()
