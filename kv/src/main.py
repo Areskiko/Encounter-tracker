@@ -224,16 +224,17 @@ def save():
     with open("chars.p", "wb") as f:
         pickle.dump([creatureDict, creatureIndex], f)
 def load():
-    with open("chars.p", "rb") as f:
-        dat = pickle.load(f)
-    for d0 in dat[0]:
-        if d0 in creatureIndex:
-            pass
-        else:
+    try:
+        with open("chars.p", "rb") as f:
+            dat = pickle.load(f)
+        for d0 in dat[0]:
+            if d0 in creatureIndex:
+                pass
+            else:
             temp = {d0:dat[0][d0]}
             creatureDict.update(temp)
             creatureIndex.append(d0)
-    update()
+        update()
 def trn():
     turn()
     update()
