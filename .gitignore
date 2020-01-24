@@ -1,3 +1,8 @@
 *.pyc
+<<<<<<< HEAD
+src/chars.p
+src/icon.ico
+=======
 kv/src/chars.p
 kv/src/icon.ico
+>>>>>>> master
