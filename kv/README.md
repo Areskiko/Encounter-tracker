@@ -1,3 +1,3 @@
 # Arbox
  
-Tracker written in Kivy
+Tracker written in Kivy packaged for windows
