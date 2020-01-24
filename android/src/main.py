@@ -231,19 +231,12 @@ def load():
             if d0 in creatureIndex:
                 pass
             else:
-<<<<<<< HEAD:android/src/main.py
-            temp = {d0:dat[0][d0]}
-            creatureDict.update(temp)
-            creatureIndex.append(d0)
-        update()
-=======
                 temp = {d0:dat[0][d0]}
                 creatureDict.update(temp)
                 creatureIndex.append(d0)
         update()
     except:
         pass
->>>>>>> kv:kv/src/frontend.py
 def trn():
     turn()
     update()
