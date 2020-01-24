@@ -4,7 +4,7 @@
 title = Arbox
 
 # (str) Package name
-package.name = Arbox
+package.name = myapp
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.test
@@ -28,7 +28,7 @@ source.include_exts = py,png,jpg,kv,atlas
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 0.1
+version = 1
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
