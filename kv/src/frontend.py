@@ -11,6 +11,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.popup import Popup
 #endregion Kivy
 from backend import *
 import thingDef
@@ -18,7 +19,8 @@ import inspect
 import pickle
 #endregion Imports
 
-rootLayout = BoxLayout(orientation="vertical")
+#rootLayout = BoxLayout(orientation="vertical")
+errorPopup = Popup(title="Error", size_hint=(0.5, 0.5))
 
 class argScreen(Screen):
     def __init__(self, argument, **kwargs):
@@ -42,13 +44,13 @@ class CreatorScreen(Screen):
         self.inputLayout = BoxLayout(orientation="vertical")
         inputList = []
         for arg, nr in zip(inspect.getfullargspec(thingDef.creature.__init__)[0], range(len(inspect.getfullargspec(thingDef.creature.__init__)[0])-1)):
-            if str(arg) in ["self"]:
+            if str(arg) in ["self", "inventory", "gear"]:
                 pass
             elif str(arg) == "stats":
                 arg = "Stats (Str, Dex, Con, Int, Wis, Cha)"
                 self.inputLayout.add_widget(argScreen(arg))
             else:
-                self.inputLayout.add_widget(argScreen(arg))
+                self.inputLayout.add_widget(argScreen(str(arg).capitalize()))
 
         addBtn = Button(text="Add")
         addBtn.bind(on_press=lambda x: self.callback(x))
@@ -63,31 +65,36 @@ class CreatorScreen(Screen):
 
 
     def callback(self, instance):
-        ints = ["maxHp", "hp", "tempHp", "speed", "initiative", "AC"]
-        strings = ["name"]
-        lists = ["Inventory", "gear", "conditions"]
-        dicts = ["stats"]
-        args = []
-        for argField in self.inputLayout.children:
-            if type(argField) == type(Button()):
-                pass
-            else:
-                arg = argField.inputField.text
-                _type = argField.inputName.text
-                if _type in ints:
-                    args.append(int(arg))
-                if _type in strings:
-                    args.append(str(arg))
-                if _type in lists:
-                    args.append(arg.split(", "))
-                if _type in dicts:
-                    statsList = arg.split(", ")
-                    try:
-                        args.append({"strength":statsList[0], "dexterity":statsList[1], "constitution":statsList[2], "intelligence":statsList[3], "wisdom":statsList[4], "charisma":statsList[5]})
-                    except KeyError:
-                        #Add popup
-        args.reverse()
-        createCreature(*args)
+        try:
+            ints = ["Maxhp", "Hp", "Temphp", "Speed", "Initiative", "Ac"]
+            strings = ["Name"]
+            lists = ["Inventory", "Gear", "Conditions"]
+            dicts = ["Stats (Str, Dex, Con, Int, Wis, Cha)"]
+            args = []
+            for argField in self.inputLayout.children:
+                if type(argField) == type(Button()):
+                    pass
+                else:
+                    arg = argField.inputField.text
+                    _type = argField.inputName.text
+                    if _type in ints:
+                        if arg == "":
+                            arg = 1
+                        args.append(int(arg))
+                    if _type in strings:
+                        args.append(str(arg))
+                    if _type in lists:
+                        args.append(arg.split(", "))
+                    if _type in dicts:
+                        statsList = arg.split(", ")
+                        try:
+                            args.append({"strength":statsList[0], "dexterity":statsList[1], "constitution":statsList[2], "intelligence":statsList[3], "wisdom":statsList[4], "charisma":statsList[5]})
+                        except IndexError:
+                            args.append({"strength":10, "dexterity":10, "constitution":10, "intelligence":10, "wisdom":10, "charisma":10})
+            args.reverse()
+            createCreature(*args)
+        except Exception as e:
+            errorhandling(e)
     def swap(self, instance):
         sm.transition.direction = "left"
         sm.current = "combat"
@@ -142,7 +149,7 @@ class CreatureField(BoxLayout):
             name = self.creature.name
         else:
             name = f"[s]{self.creature.name}[/s]"
-        self.add_widget(Label(text=name, color=nColor))
+        self.add_widget(Label(text=name, color=nColor, markup=True))
         rate = self.creature.hp/self.creature.maxHp
         if rate < 0.3:
             hColor = [1, 0, 0, 1]
@@ -187,19 +194,22 @@ class ActionField(BoxLayout):
         self.add_widget(self.do)
 
     def doIt(self, instance):
-        action = self.action.text
-        creature = creatureDict[self.target.text]
-        if action == "Damage":
-            creature.takeDamage(eval(self.amount.text))
-        elif action == "Heal":
-            creature.heal(eval(self.amount.text))
-        elif action == "Give Temp Hp":
-            creature.addTempHp(eval(self.amount.text))
-        elif action == "Remove Temp Hp":
-            creature.removeTempHp()
-        elif action == "Set Initiative":
-            creature.setInitiative(eval(self.amount.text))
-        update()
+        try:
+            action = self.action.text
+            creature = creatureDict[self.target.text]
+            if action == "Damage":
+                creature.takeDamage(eval(self.amount.text))
+            elif action == "Heal":
+                creature.heal(eval(self.amount.text))
+            elif action == "Give Temp Hp":
+                creature.addTempHp(eval(self.amount.text))
+            elif action == "Remove Temp Hp":
+                creature.removeTempHp()
+            elif action == "Set Initiative":
+                creature.setInitiative(eval(self.amount.text))
+            update()
+        except Exception as e:
+            errorhandling(e)
 
 class InfoField(GridLayout):
     def __init__(self, creature, **kwargs):
@@ -221,6 +231,17 @@ class InfoField(GridLayout):
         self.add_widget(Label(text=f"AC:{creature.AC}"))
         self.add_widget(Label(text=f"Speed:{creature.speed}"))
 
+class ErrorScreen(Screen):
+    def __init__(self, **kwargs):
+        """Initializes the screen"""
+        super(ErrorScreen, self).__init__(**kwargs)
+        errorPopup.bind(on_dismiss=self.swap)
+        self.bind(on_enter=self.disp)
+    def swap(self, instance):
+        sm.transition.direction = "down"
+        sm.current = "create"
+    def disp(self, instance):
+        errorPopup.open()
 
 def createCreature(*args):
     addCreature(thingDef.creature(*args))
@@ -260,14 +281,21 @@ def update():
     combat.actionArea.target.values=[creature for creature in creatureIndex]
 
 sm = ScreenManager()
+dur = sm.transition.duration
 combat = CombatScreen(name="combat")
 create = CreatorScreen(name="create")
 sm.add_widget(create)
 sm.add_widget(combat)
+sm.add_widget(ErrorScreen(name="error"))
 
+def errorhandling(e):
+        errorPopup.content=Label(text=str(e))
+        sm.transition.direction = "up"
+        sm.current = "error"
 class Main(App):
     def build(self):
         return sm
+        
 
 if __name__ == "__main__":
     Main().run()
