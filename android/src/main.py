@@ -42,8 +42,11 @@ class CreatorScreen(Screen):
         self.inputLayout = BoxLayout(orientation="vertical")
         inputList = []
         for arg, nr in zip(inspect.getfullargspec(thingDef.creature.__init__)[0], range(len(inspect.getfullargspec(thingDef.creature.__init__)[0])-1)):
-            if str(arg)=="self":
+            if str(arg) in ["self", "inventory", "gear"]:
                 pass
+            elif str(arg) == "stats":
+                arg = "Stats (Str, Dex, Con, Int, Wis, Cha)"
+                self.inputLayout.add_widget(argScreen(arg))
             else:
                 self.inputLayout.add_widget(argScreen(arg))
 
@@ -72,6 +75,8 @@ class CreatorScreen(Screen):
                 arg = argField.inputField.text
                 _type = argField.inputName.text
                 if _type in ints:
+                    if arg == "":
+                        arg = 1
                     args.append(int(arg))
                 if _type in strings:
                     args.append(str(arg))
@@ -79,7 +84,11 @@ class CreatorScreen(Screen):
                     args.append(arg.split(", "))
                 if _type in dicts:
                     statsList = arg.split(", ")
-                    args.append({"strength":statsList[0], "dexterity":statsList[1], "constitution":statsList[2], "intelligence":statsList[3], "wisdom":statsList[4], "charisma":statsList[5]})
+                    try:
+                        args.append({"strength":statsList[0], "dexterity":statsList[1], "constitution":statsList[2], "intelligence":statsList[3], "wisdom":statsList[4], "charisma":statsList[5]})
+                    except KeyError:
+                        #TODO: Add popup
+                        pass
         args.reverse()
         createCreature(*args)
     def swap(self, instance):
@@ -136,7 +145,7 @@ class CreatureField(BoxLayout):
             name = self.creature.name
         else:
             name = f"[s]{self.creature.name}[/s]"
-        self.add_widget(Label(text=name, color=nColor))
+        self.add_widget(Label(text=name, color=nColor, markup=True))
         rate = self.creature.hp/self.creature.maxHp
         if rate < 0.3:
             hColor = [1, 0, 0, 1]
