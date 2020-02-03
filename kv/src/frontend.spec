@@ -31,4 +31,4 @@ exe = EXE(pyz, Tree('.','Data'),
           debug=False,
           strip=False,
           upx=True,
-          console=False, icon='icon.ico' )
+          console=False)

@@ -115,15 +115,20 @@ class CombatScreen(Screen):
         updateButton.bind(on_press=lambda x: trn())
         self.layout.add_widget(updateButton)
 
-        self.saveLoad = BoxLayout(orientation="horizontal", size_hint=(1, 0.2))
+        self.saveBox = BoxLayout(size_hint=(1, 0.2))
+        self.fileName = TextInput(text="chars")
+        self.saveBox.add_widget(self.fileName)
+
+        self.saveLoad = BoxLayout(orientation="horizontal")
         self.save = Button(text="Save")
-        self.save.bind(on_press=lambda x: save())
+        self.save.bind(on_press=lambda x: save(self.fileName.text))
         self.saveLoad.add_widget(self.save)
 
         self.load = Button(text="Load")
-        self.load.bind(on_press=lambda x: load())
+        self.load.bind(on_press=lambda x: load(self.fileName.text))
         self.saveLoad.add_widget(self.load)
-        self.layout.add_widget(self.saveLoad)
+        self.saveBox.add_widget(self.saveLoad)
+        self.layout.add_widget(self.saveBox)
 
         swapButton = Button(text="Create", size_hint=(1,0.2))
         swapButton.bind(on_press=lambda x: self.swap(x))
@@ -247,12 +252,16 @@ def createCreature(*args):
     addCreature(thingDef.creature(*args))
     update()
 
-def save():
-    with open("chars.p", "wb") as f:
+  
+def trn():
+    turn()
+    update()
+def save(fileName):
+    with open(fileName+".p", "wb") as f:
         pickle.dump([creatureDict, creatureIndex], f)
-def load():
+def load(fileName):
     try:
-        with open("chars.p", "rb") as f:
+        with open(fileName+".p", "rb") as f:
             dat = pickle.load(f)
         for d0 in dat[0]:
             if d0 in creatureIndex:
@@ -264,10 +273,7 @@ def load():
         update()
     except:
         pass
-def trn():
-    turn()
-    update()
-
+  
 def update():
     sortIndex()
     combat.creatureArea.clear_widgets()

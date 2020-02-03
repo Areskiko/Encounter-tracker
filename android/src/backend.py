@@ -1,3 +1,4 @@
+import pickle
 creatureDict = {}
 creatureIndex = []
 
@@ -36,3 +37,4 @@ def turn():
 def deleteChar(creatureName):
     del creatureDict[creatureName]
     creatureIndex.remove(creatureName)
+
