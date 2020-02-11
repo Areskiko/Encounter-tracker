@@ -6,11 +6,12 @@ def getInitiative(creatureName):
 
 def addCreature(creature):
     if creature.name in creatureIndex:
-        print("Nah Fam")
+        return -1
     else:
         creatureDict[creature.name] = creature
         creatureIndex.append(creature.name)
         sortIndex()
+        return 0
 
 def sortIndex():
     creatureIndex.sort(key=getInitiative, reverse=True)

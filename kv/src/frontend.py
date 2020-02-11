@@ -17,6 +17,7 @@ from backend import *
 import thingDef
 import inspect
 import pickle
+import re
 #endregion Imports
 
 #rootLayout = BoxLayout(orientation="vertical")
@@ -32,7 +33,6 @@ class argScreen(Screen):
         self.inputField = TextInput(multiline=False)
         layout.add_widget(self.inputField)
         self.add_widget(layout)
-
 
 class CreatorScreen(Screen):
     def __init__(self, **kwargs):
@@ -249,8 +249,36 @@ class ErrorScreen(Screen):
         errorPopup.open()
 
 def createCreature(*args):
-    addCreature(thingDef.creature(*args))
-    update()
+    def createAndDismiss(popup, newName):
+        newArgs = [newName, *args[1:]]
+        addCreature(thingDef.creature(*newArgs))
+        popup.dismiss()
+        update()
+
+    if addCreature(thingDef.creature(*args)) == 0:
+        update()
+    else:
+        if regex := re.search("(\D*?)([0-9]+)", args[0]):
+            print("Regex")
+            names = [name for name in creatureIndex if regex.group(1) in name]
+            #r = re.compile("\D*[0-9]+")
+            #matchList = list(filter(r.match, names))
+            nr = int(regex.group(2)) + 1
+            while (newName := regex.group(1) + str(nr)) in names:
+                newName = regex.group(1) + str(nr)
+                nr += 1
+        else:
+            print("ListComp")
+            names = [name for name in creatureIndex if args[0] in name]
+            newName = args[0] + str(len(names))
+
+        content = BoxLayout(orientation="vertical")
+        alert = Popup(title="Creature allready exists", content=content, size_hint=(0.5, 0.5), auto_dismiss=False)
+        content.add_widget(Label(text=f"There is allready a creature named {args[0]}\nDo you want to name it {newName} instead?"))
+        content.add_widget(Button(text="Yes", on_press= lambda x: createAndDismiss(alert, newName)))
+        content.add_widget(Button(text="No", on_press=alert.dismiss))
+        alert.open()
+
 
   
 def trn():
