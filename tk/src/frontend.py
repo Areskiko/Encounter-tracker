@@ -53,11 +53,10 @@ def createCreature():
                 statsList = arg.split(", ")
                 args.append({"strength":statsList[0], "dexterity":statsList[1], "constitution":statsList[2], "intelligence":statsList[3], "wisdom":statsList[4], "charisma":statsList[5]})
             else:
-                print("Error")
+                pass
         addCreature(thingDef.creature(*args))
     except Exception as e:
-        print(e)
-    print(creatureIndex)
+        pass
     update()
 
 addBtn = ttk.Button(inputFrame, text="Add!", command=createCreature)

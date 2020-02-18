@@ -6,7 +6,7 @@ def getInitiative(creatureName):
 
 def addCreature(creature):
     if creature.name in creatureIndex:
-        print("Nah Fam")
+        pass
     else:
         creatureDict[creature.name] = creature
         creatureIndex.append(creature.name)
