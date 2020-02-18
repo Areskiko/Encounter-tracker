@@ -258,13 +258,15 @@ def createCreature(*args):
     if addCreature(thingDef.creature(*args)) == 0:
         update()
     else:
-        if regex := re.search("(\D*?)([0-9]+)", args[0]):
+        regex = re.search("(\D*?)([0-9]+)", args[0])
+        if regex:
             pass
             names = [name for name in creatureIndex if regex.group(1) in name]
             #r = re.compile("\D*[0-9]+")
             #matchList = list(filter(r.match, names))
             nr = int(regex.group(2)) + 1
-            while (newName := regex.group(1) + str(nr)) in names:
+            newName = regex.group(1) + str(nr)
+            while newName in names:
                 newName = regex.group(1) + str(nr)
                 nr += 1
         else:
